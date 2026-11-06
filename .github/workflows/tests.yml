@@ -17,9 +17,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        # pystray is only needed by the tray UI, which the tests don't import
-        run: python -m pip install "Pillow>=10.0" pyflakes
+        run: python -m pip install -r requirements.txt pyflakes
       - name: Lint
         run: python -m pyflakes usagetray tests main.py probe.py claude_statusline.py install_claude_statusline.py
+        # pystray's Linux backends need a desktop session; the tests that need it are Windows-only
       - name: Unit tests
         run: python -m unittest discover -s tests -v

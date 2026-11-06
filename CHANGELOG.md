@@ -8,6 +8,7 @@
 - **Fix:** a quoted `codex_command` setting now works on Windows.
 - **Fix:** the Claude Code status line now always prints UTF-8. Before this, the `·` could appear garbled on Windows.
 - **Repo:** added GitHub Actions for tests (Windows and Linux) and tag-triggered `.exe` releases.
+- **Self-check:** added `--smoke-test`. Each release `.exe` is launched with it before publishing.
 
 ## 0.3.0
 - **Taskbar icons:** they show numbers instead of bars, coloured by how much is left, and are drawn at the exact tray icon size so they stay sharp.
