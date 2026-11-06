@@ -6,4 +6,4 @@
 - **Requirements:** Claude Code and/or Codex CLI, logged in on this PC.
 - **Optional extra:** instant Claude updates while you use Claude Code need the Python setup. See the README.
 
-What changed: see [CHANGELOG.md](https://github.com/Sngqih/Claude-Codex-TaskbarUsageWidgets___ClaudeVibecodedProject___/blob/main/CHANGELOG.md).
+What changed: see [CHANGELOG.md](https://github.com/Sngqih/AIUsageTaskbarWidgets___ClaudeVibecodedProject___/blob/main/CHANGELOG.md).

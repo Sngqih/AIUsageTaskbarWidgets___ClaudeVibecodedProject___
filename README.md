@@ -34,7 +34,7 @@ Icons are drawn at the exact pixel size your taskbar uses (16–32 px depending 
 Requires Windows 10/11, **Python 3.10+** (from python.org, with the default "tcl/tk" option), and Claude Code and/or Codex CLI logged in.
 
 ```bat
-git clone https://github.com/Sngqih/Claude-Codex-TaskbarUsageWidgets___ClaudeVibecodedProject___.git usage-tray
+git clone https://github.com/Sngqih/AIUsageTaskbarWidgets___ClaudeVibecodedProject___.git usage-tray
 cd usage-tray
 setup.bat
 run.bat
