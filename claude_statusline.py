@@ -123,7 +123,10 @@ def main() -> None:
     else:
         line = default_line(rl or {})
         if line:
-            sys.stdout.write(line + "\n")
+            # Always UTF-8: on Windows a piped stdout defaults to the legacy
+            # codepage, which would garble the "·" in Claude Code's status line.
+            sys.stdout.buffer.write((line + "\n").encode("utf-8"))
+            sys.stdout.flush()
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@
 - **Panel:** each weekly bar has a grey "even pace" bar behind it, and the reset line shows the even-pace %.
 - **Setup:** the Python environment moved to `%LOCALAPPDATA%\UsageTray\venv`, outside the project folder.
 - **Fix:** a quoted `codex_command` setting now works on Windows.
+- **Fix:** the Claude Code status line now always prints UTF-8. Before this, the `·` could appear garbled on Windows.
 - **Repo:** added GitHub Actions for tests (Windows and Linux) and tag-triggered `.exe` releases.
 
 ## 0.3.0
