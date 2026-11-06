@@ -1,13 +1,24 @@
 name: release
 
-# Push a tag like v0.5.0 to build UsageTray.exe on Windows and publish it
-# as a GitHub release:  git tag v0.5.0 && git push origin v0.5.0
+# Builds UsageTray.exe on Windows, smoke-tests it, and publishes a GitHub release.
+# Two ways to start it:
+#   1. GitHub website: Actions -> release -> "Run workflow", enter e.g. v0.4.0
+#   2. Terminal:       git tag v0.4.0 && git push origin v0.4.0
+# The tag must match __version__ in usagetray/__init__.py.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag to release (must match __version__, e.g. v0.4.0)"
+        required: true
 
 permissions:
   contents: write
+
+env:
+  TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 jobs:
   build:
@@ -17,6 +28,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Check tag matches the code version
+        shell: pwsh
+        run: |
+          $v = python -c "import usagetray; print(usagetray.__version__)"
+          if ("$env:TAG" -ne "v$v") { throw "Tag $env:TAG doesn't match __version__ $v (expected v$v)" }
+          Write-Host "Releasing $env:TAG"
       - name: Install
         run: python -m pip install -r requirements.txt pyinstaller
       - name: Test
@@ -35,4 +52,5 @@ jobs:
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${{ github.ref_name }}" dist\UsageTray.exe --title "UsageTray ${{ github.ref_name }}" --notes-file .github\release-notes.md
+        # --target creates the tag at this commit when started from the website
+        run: gh release create "${{ env.TAG }}" dist\UsageTray.exe --target "${{ github.sha }}" --title "UsageTray ${{ env.TAG }}" --notes-file .github\release-notes.md

@@ -98,7 +98,7 @@ python -m unittest discover -s tests
 ```
 
 - **Tests** run offline: a fake Anthropic server, a fake `codex app-server` (`tests/fake_codex.py`) and fake session logs. GitHub Actions runs them on Windows and Linux for every push.
-- **Releases:** push a version tag (`git tag v0.5.0 && git push origin v0.5.0`). GitHub Actions then builds `UsageTray.exe` and attaches it to a new release. Bump `__version__` in `usagetray/__init__.py` first.
+- **Releases:** first bump `__version__` in `usagetray/__init__.py` and add a `CHANGELOG.md` entry. Then, on GitHub, open **Actions → release → Run workflow** and enter the tag (e.g. `v0.5.0`). Or push the tag from a terminal: `git tag v0.5.0 && git push origin v0.5.0`. The workflow tests the code, builds `UsageTray.exe`, smoke-tests it, and publishes the release.
 - **Project notes** for contributors (and AI assistants) are in [`CLAUDE.md`](CLAUDE.md), and the version history is in [`CHANGELOG.md`](CHANGELOG.md).
 
 ```
