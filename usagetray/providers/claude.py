@@ -5,7 +5,12 @@ LIVE: the endpoint Claude Code's /usage screen uses,
       with the OAuth access token Claude Code stores in ~/.claude/.credentials.json.
       Account-wide, so it includes claude.ai and app usage too.
       We only READ the token; we never refresh it ourselves (refreshing rotates
-      the refresh token and could sign Claude Code out).
+      the refresh token and could sign Claude Code out, and the token endpoint
+      rejects requests that don't come from Claude Code anyway).
+      Tokens last ~8 hours and only Claude Code renews them, so after a night
+      without Claude Code the saved one has expired. While it's expired we
+      don't call the endpoint at all (that just earns 429s); we watch the
+      credentials file instead and check again the moment it changes.
 
 FILE: `claude_statusline.py` (installed as Claude Code's status line) saves the
       rate limits Claude Code passes to it after each reply into
@@ -55,7 +60,13 @@ def _window_s(key: str):
         return 7 * 86400.0
     return None
 
-LOGIN_HINT = "run `claude auth login` in a terminal to fix."
+FIX_HINT = ("To fix: open Claude Code and log in again if it asks, or right-click the "
+            "Claude icon and choose \"Log in to Claude Code\". UsageTray reconnects "
+            "by itself once the new login is saved.")
+
+# While the saved login can't work, only re-check this often; a change to the
+# credentials file triggers a check straight away regardless.
+LOGIN_WAIT_S = 30 * 60.0
 
 
 class ClaudeProvider(HybridProvider):
@@ -97,14 +108,28 @@ class ClaudeProvider(HybridProvider):
         except (TypeError, ValueError):
             return None
 
+    def _login_signature(self):
+        try:
+            st = self.credentials_path.stat()
+            return (st.st_mtime, st.st_size)
+        except OSError:
+            return None
+
     # ------------------------------------------------------------------- live
     def _live(self) -> tuple[Optional[Snapshot], str]:
         token, oauth = self.read_credentials()
         plan = str(oauth.get("subscriptionType") or "")
         if not self.credentials_path.exists():
-            return None, f"Claude Code isn't logged in on this PC; {LOGIN_HINT}"
+            self._backoff_s = LOGIN_WAIT_S
+            return None, f"Claude Code isn't logged in on this PC. {FIX_HINT}"
         if not token:
-            return None, f"Claude Code's saved login token is blank; {LOGIN_HINT}"
+            self._backoff_s = LOGIN_WAIT_S
+            return None, f"Claude Code's saved login is blank. {FIX_HINT}"
+        left = self.token_expires_in()
+        if left is not None and left <= 0:
+            # Asking with an expired token can't work and gets us rate-limited.
+            self._backoff_s = LOGIN_WAIT_S
+            return None, f"Claude Code's login expired {fmt_duration(-left)} ago. {FIX_HINT}"
 
         req = urllib.request.Request(ENDPOINT, headers={
             "Authorization": f"Bearer {token}",
@@ -117,11 +142,11 @@ class ClaudeProvider(HybridProvider):
                 body = json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
+                self._backoff_s = LOGIN_WAIT_S
                 left = self.token_expires_in()
-                if left is not None and left < 0:
-                    return None, (f"saved login token expired {fmt_duration(-left)} ago "
-                                  f"(Claude Code didn't save its refreshed one); {LOGIN_HINT}")
-                return None, f"Anthropic rejected the saved login token; {LOGIN_HINT}"
+                if left is not None and left <= 0:
+                    return None, f"Claude Code's login expired {fmt_duration(-left)} ago. {FIX_HINT}"
+                return None, f"Anthropic didn't accept Claude Code's saved login. {FIX_HINT}"
             if e.code == 429:
                 ra = e.headers.get("Retry-After") if e.headers else None
                 self._backoff_s = float(ra) if ra and ra.isdigit() else 600.0

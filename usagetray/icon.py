@@ -209,7 +209,9 @@ def tooltip(snap: Snapshot, at: Optional[datetime] = None,
     if wk and snap.status == OK and wk.underused(underuse_pct, underuse_days, at):
         lines.append(f"(!) Under {underuse_pct:.0f}% used with {fmt_duration(wk.time_left_s(at))} left")
     if snap.warning:
-        lines.append("(!) Not live, click for details")
+        # First sentence only, e.g. "Not live: Claude Code's login expired 9h ago"
+        reason = snap.warning.split(". ")[0].rstrip(".")
+        lines.append(f"(!) {reason}" if len(reason) <= 60 else "(!) Not live, click for details")
     elif snap.status != OK:
         lines.append(f"(!) {snap.detail or 'stale'}")
     if snap.as_of and snap.checked_at and (snap.checked_at - snap.as_of).total_seconds() > 90:

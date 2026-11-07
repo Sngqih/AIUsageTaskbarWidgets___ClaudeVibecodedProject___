@@ -39,10 +39,17 @@ class HybridProvider:
         self._file_snap: Optional[Snapshot] = None
         self._file_err = ""
         self._file_sig: object = object()
+        self._login_sig: object = object()
 
     # ---- implemented by subclasses ---------------------------------------
     def _live(self) -> tuple[Optional[Snapshot], str]:
         raise NotImplementedError
+
+    def _login_signature(self):
+        """Something that changes when the saved login changes (e.g. the
+        credentials file's mtime). A change triggers a live check right
+        away, skipping any wait, so a fresh login is picked up in seconds."""
+        return None
 
     def _file_signature(self):
         raise NotImplementedError
@@ -65,7 +72,15 @@ class HybridProvider:
             self._file_snap, self._file_err = self._read_file()
             changed = True
 
-        if force or now >= self._next_live:
+        login_changed = False
+        login_sig = self._login_signature()
+        if login_sig != self._login_sig:
+            login_changed = self._live_err not in (None, "")
+            if login_changed:
+                log.info("%s login changed; checking again now", self.name)
+            self._login_sig = login_sig
+
+        if force or login_changed or now >= self._next_live:
             mult = self.battery_multiplier if winutil.on_battery() else 1.0
             self._backoff_s = None
             snap, err = self._live()
@@ -74,6 +89,8 @@ class HybridProvider:
                 wait = max(wait, self._backoff_s)
             self._next_live = time.monotonic() + wait
             if snap is not None:
+                if self._live_err:
+                    log.info("%s %s working again", self.name, self.live_label)
                 self._live_snap, self._live_err = snap, ""
             else:
                 if err != self._live_err:

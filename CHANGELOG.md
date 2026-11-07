@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 (2026-11-07)
+- **Claude login expiry:** the tooltip and panel now say plainly that Claude Code's login expired, how long ago, and how to fix it.
+- **Automatic recovery:** UsageTray watches Claude Code's login file and reconnects within seconds of a new login being saved, with no restart.
+- **No more rate-limit lockouts:** while the login is expired or rejected, UsageTray stops calling the usage endpoint. Before, it kept retrying and got rate-limited for up to an hour.
+- **Menu:** the Claude icon has a new **Log in to Claude Code…** item, which opens `claude auth login` in a terminal.
+
 ## 0.4.0 (2026-11-06)
 - **Taskbar icons:** the numbers now show `%`.
 - **Underuse warning:** a yellow `!` appears before the weekly number when that limit resets within 2 days and less than 50% is used. Both thresholds are configurable.

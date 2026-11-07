@@ -123,7 +123,7 @@ class ClaudeTests(unittest.TestCase):
     def test_blank_token(self):
         s = self.make(token="").fetch()
         self.assertEqual(s.status, ERROR)
-        self.assertIn("claude auth login", s.detail)
+        self.assertIn("Log in to Claude Code", s.detail)
 
     def test_blank_token_with_recent_status_line_warns(self):
         p = self.make(token="", status={"captured_at": time.time() - 120, "rate_limits": {
@@ -131,7 +131,7 @@ class ClaudeTests(unittest.TestCase):
         s = p.fetch()
         self.assertEqual(s.status, OK)
         self.assertIn("Not live", s.warning)
-        self.assertIn("claude auth login", s.warning)
+        self.assertIn("Log in to Claude Code", s.warning)
 
     def test_old_status_line_without_live_is_stale(self):
         p = self.make(token="", status={"captured_at": time.time() - 3600, "rate_limits": {
@@ -146,7 +146,51 @@ class ClaudeTests(unittest.TestCase):
         FakeHandler.mode = "401"
         s = self.make(expired=True).fetch()
         self.assertEqual(s.status, ERROR)
-        self.assertIn("expired", s.detail)
+        self.assertIn("login expired", s.detail)
+        self.assertIn("Log in to Claude Code", s.detail)
+
+    def test_expired_token_is_not_sent(self):
+        FakeHandler.mode = "ok"
+        FakeHandler.seen_headers = {}
+        p = self.make(expired=True)
+        s = p.fetch()
+        self.assertEqual(FakeHandler.seen_headers, {})       # no request made
+        self.assertIn("login expired", s.detail)
+        self.assertGreaterEqual(p._next_live - time.monotonic(), 25 * 60)
+
+    def test_recovers_when_login_saved(self):
+        FakeHandler.mode = "ok"
+        p = self.make(expired=True)
+        self.assertEqual(p.fetch().status, ERROR)
+        self.assertIsNone(p.fetch())                         # waiting, nothing changed
+        # Claude Code saves a fresh login -> picked up on the very next tick
+        creds = p.credentials_path
+        creds.write_text(json.dumps({"claudeAiOauth": {
+            "accessToken": "sk-ant-oat01-NEW", "expiresAt": (time.time() + 3600) * 1000,
+            "subscriptionType": "max"}}))
+        os.utime(creds, (time.time() + 5, time.time() + 5))
+        s = p.fetch()
+        self.assertEqual(s.status, OK)
+        self.assertTrue(p.live_ok())
+        self.assertEqual(s.warning, "")
+        self.assertEqual(FakeHandler.seen_headers.get("authorization"), "Bearer sk-ant-oat01-NEW")
+
+    def test_rejected_token_waits_for_new_login(self):
+        FakeHandler.mode = "401"
+        p = self.make()
+        s = p.fetch()
+        self.assertIn("didn't accept", s.detail)
+        self.assertGreaterEqual(p._next_live - time.monotonic(), 25 * 60)
+        FakeHandler.mode = "ok"
+
+    def test_expired_with_status_line_tooltip(self):
+        from usagetray.icon import tooltip
+        p = self.make(expired=True, status={"captured_at": time.time() - 60, "rate_limits": {
+            "five_hour": {"used_percentage": 12, "resets_at": time.time() + 3000}}})
+        s = p.fetch()
+        self.assertEqual(s.status, OK)
+        self.assertTrue(s.warning.startswith("Not live: Claude Code's login expired"))
+        self.assertIn("(!) Not live: Claude Code's login expired", tooltip(s))
 
     def test_429_backoff(self):
         FakeHandler.mode = "429"

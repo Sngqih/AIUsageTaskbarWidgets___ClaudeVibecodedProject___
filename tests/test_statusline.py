@@ -124,7 +124,7 @@ class FallbackTests(unittest.TestCase):
         from usagetray.model import ERROR
         s = self.p.fetch()
         self.assertEqual(s.status, ERROR)
-        self.assertIn("claude auth login", s.detail)
+        self.assertIn("Log in to Claude Code", s.detail)
 
     def test_blank_token_with_status_file(self):
         from usagetray.model import OK

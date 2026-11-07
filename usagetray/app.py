@@ -98,6 +98,8 @@ class App:
             self.flyout.toggle()
         elif action == "refresh":
             self.refresh_all()
+        elif action == "login":
+            winutil.open_claude_login()
         elif action == "settings":
             self.open_settings()
         elif action == "log":

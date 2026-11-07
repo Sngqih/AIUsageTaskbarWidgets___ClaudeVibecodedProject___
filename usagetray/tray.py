@@ -73,9 +73,13 @@ class Tray:
 
     def _menu(self) -> pystray.Menu:
         P = self.provider
+        extra = []
+        if P == "claude":
+            extra = [pystray.MenuItem("Log in to Claude Code…", lambda: self.post("login", P))]
         return pystray.Menu(
             pystray.MenuItem("Show details", lambda: self.post("show", P), default=True),
             pystray.MenuItem("Refresh now", lambda: self.post("refresh", P)),
+            *extra,
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Start with Windows", self._toggle_autostart,
                              checked=lambda item: winutil.autostart_enabled()),

@@ -57,7 +57,11 @@ You can also download a standalone `UsageTray.exe` from the **Releases** page, w
 
 - **It never undercounts.** Usage inside one limit window only goes up, so when two readings disagree the higher one wins, and a reset starts fresh.
 - **Your Claude token is only read, never refreshed or copied**, and it's only sent to Anthropic.
-- **If the Claude token expires or goes blank:** on Windows, Claude Code sometimes doesn't save its refreshed token. When that happens, the icon shows the amber tip and the panel says so. Run `claude auth login` in a terminal to fix it. `probe.py` shows when the saved token expires.
+- **If the Claude login expires or goes blank:**
+  - The token lasts about 8 hours, and only Claude Code can renew it. UsageTray can't renew it itself: Anthropic only accepts renewals from Claude Code, and renewing it from outside could sign Claude Code out. So after a night without Claude Code, the Claude icon shows "Not live: Claude Code's login expired".
+  - **To fix it,** open Claude Code (log in again if it asks), or right-click the Claude icon and choose **Log in to Claude Code…**. UsageTray watches the login file and reconnects within seconds of the new login being saved. You don't need to restart it.
+  - While the login is expired, UsageTray doesn't keep asking Anthropic, because that only gets it rate-limited. With the status line installed you still get numbers after each Claude Code reply.
+  - `probe.py` shows when the saved token expires.
 - **The status line installer** backs up Claude Code's `settings.json` and keeps any status line you already have. `remove_claude_statusline.bat` undoes it.
 
 ## Battery

@@ -164,6 +164,23 @@ def set_autostart(enabled: bool) -> None:
     log.info("Start with Windows: %s", enabled)
 
 
+def open_claude_login() -> None:
+    """Opens a console window running `claude auth login` (browser sign-in).
+    When it finishes, Claude Code saves a fresh login and the widget's
+    credentials-file watch picks it up within seconds."""
+    if not IS_WIN:
+        return
+    import subprocess
+    script = ("echo Signing in to Claude Code. Finish the sign-in in your browser. & echo. & "
+              "claude auth login & echo. & "
+              "echo Done. UsageTray will reconnect by itself. You can close this window. & pause")
+    try:
+        subprocess.Popen(["cmd.exe", "/c", script],
+                         creationflags=subprocess.CREATE_NEW_CONSOLE)
+    except OSError:
+        log.exception("Could not start `claude auth login`")
+
+
 def open_file(path: Path) -> None:
     if IS_WIN:
         os.startfile(str(path))  # noqa: S606 - opens in the user's default editor
